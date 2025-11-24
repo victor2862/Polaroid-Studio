@@ -1,0 +1,5 @@
+{
+  "name": "Polaroid Studio",
+  "description": "Crie grids de fotos estilo Polaroid ou com bordas finas para impressão. Inclui recorte, ajuste de layout e inclusão de legendas.",
+  "requestFramePermissions": []
+}
