@@ -34,6 +34,7 @@ export interface Settings {
   paddingHorizontalMm: number;
   paddingVerticalMm: number;
   style: 'polaroid' | 'minimal' | 'borderless';
+  captionSpaceMm: number;
   aspectRatio: AspectRatio;
   showCaptions: boolean;
   fontFamily: 'Inter' | 'Shadows Into Light' | 'Permanent Marker';

@@ -1,3 +1,4 @@
+
 import { jsPDF } from "jspdf";
 import { Photo, Settings, PAPER_SIZES, ASPECT_RATIOS } from "../types";
 
@@ -32,7 +33,7 @@ export const generatePDF = async (photos: Photo[], settings: Settings) => {
     format: [finalDocW, finalDocH], 
   });
 
-  const { rows, cols, gapMm, paddingHorizontalMm, paddingVerticalMm, style, aspectRatio, showCaptions } = settings;
+  const { rows, cols, gapMm, paddingHorizontalMm, paddingVerticalMm, style, aspectRatio, showCaptions, captionSpaceMm } = settings;
   const ratioValue = ASPECT_RATIOS[aspectRatio];
 
   // Calculate grid cell dimensions
@@ -83,8 +84,9 @@ export const generatePDF = async (photos: Photo[], settings: Settings) => {
     let bottomPadding = 0;
 
     if (style === 'polaroid') {
-      innerPadding = cellWidth * 0.06; // 6% side margin
-      bottomPadding = Math.max(20, cellHeight * 0.20); // At least 20mm or 20% for text
+      innerPadding = cellWidth * 0.05; // 5% side margin
+      // Use configured caption space
+      bottomPadding = captionSpaceMm || 25; 
       
       // Reduce drawing area for image
       imgX += innerPadding;
@@ -117,7 +119,9 @@ export const generatePDF = async (photos: Photo[], settings: Settings) => {
         // Area is taller than target ratio: Width is constraint
         finalImgW = areaW;
         finalImgH = areaW / ratioValue;
-        // Center vertically
+        // Center vertically inside the image area
+        // Note: For Polaroid, we usually want the image to align to the top of its area 
+        // if we want a classic look, but centering is safer for various ratios.
         imgY += (areaH - finalImgH) / 2;
     }
 
@@ -174,16 +178,21 @@ export const generatePDF = async (photos: Photo[], settings: Settings) => {
        
        if (settings.fontFamily.includes('Marker') || settings.fontFamily.includes('Shadows')) {
            doc.setFont("courier", "bolditalic"); 
+           // Note: jsPDF standard fonts are limited. Real custom fonts require adding font files.
+           // For this demo, we assume standard fallback unless complex font handling is added.
        } else {
            doc.setFont("helvetica");
        }
        
        doc.setTextColor(50, 50, 50);
        
-       // Position text in the empty space below image
-       const textSpaceTop = imgY + finalImgH;
-       const textSpaceBottom = y + cellHeight;
-       const textCenterY = (textSpaceTop + textSpaceBottom) / 2;
+       // Calculate Text Center Logic
+       // The text area is the bottom strip defined by bottomPadding (captionSpaceMm)
+       // It starts at (y + cellHeight - bottomPadding) and has height bottomPadding.
+       
+       const textAreaTop = y + cellHeight - bottomPadding;
+       const textAreaHeight = bottomPadding;
+       const textCenterY = textAreaTop + (textAreaHeight / 2) + 1; // +1 for visual optical alignment
        
        doc.text(photo.caption, x + cellWidth / 2, textCenterY, { align: 'center', maxWidth: cellWidth - 10 });
     }

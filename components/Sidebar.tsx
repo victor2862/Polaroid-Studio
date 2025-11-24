@@ -78,7 +78,6 @@ const Sidebar: React.FC<SidebarProps> = ({ settings, updateSettings, onExport, i
                  {Object.entries(PAPER_SIZES).map(([key, size]) => (
                    <option key={key} value={key}>{size.name}</option>
                  ))}
-                 <option value="Custom">Personalizado</option>
                </select>
              </div>
 
@@ -206,6 +205,23 @@ const Sidebar: React.FC<SidebarProps> = ({ settings, updateSettings, onExport, i
                </select>
              </div>
 
+             {settings.style === 'polaroid' && (
+                <div>
+                   <div className="flex justify-between items-center">
+                        <label className="text-xs font-medium text-gray-500 uppercase">Espaço da Legenda</label>
+                        <span className="text-xs text-gray-500">{settings.captionSpaceMm}mm</span>
+                   </div>
+                   <input 
+                     type="range" 
+                     min="10" 
+                     max="60" 
+                     value={settings.captionSpaceMm}
+                     onChange={(e) => updateSettings({ captionSpaceMm: parseInt(e.target.value) })}
+                     className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 mt-1"
+                   />
+                </div>
+             )}
+
              <div>
                <label className="text-xs font-medium text-gray-500 uppercase">Proporção da Imagem</label>
                <div className="grid grid-cols-4 gap-2 mt-1">
@@ -222,7 +238,7 @@ const Sidebar: React.FC<SidebarProps> = ({ settings, updateSettings, onExport, i
              </div>
              
              <div>
-               <label className="text-xs font-medium text-gray-500 uppercase">Espaçamento (Gap - mm)</label>
+               <label className="text-xs font-medium text-gray-500 uppercase">Espaçamento entre fotos (mm)</label>
                <input 
                  type="range" 
                  min="0" 

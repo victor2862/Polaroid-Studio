@@ -20,6 +20,7 @@ const INITIAL_SETTINGS: Settings = {
   paddingHorizontalMm: 15,
   paddingVerticalMm: 15,
   style: 'polaroid',
+  captionSpaceMm: 25,
   aspectRatio: '1:1',
   showCaptions: true,
   fontFamily: 'Shadows Into Light',
@@ -27,7 +28,7 @@ const INITIAL_SETTINGS: Settings = {
   borderColor: '#eeeeee',
 };
 
-// Helper to calculate a centered crop that fills the target aspect ratio (Object-fit: cover equivalent)
+// Helper to calculate a centered crop that fits the target aspect ratio (Object-fit: cover equivalent)
 const calculateCrop = (imgWidth: number, imgHeight: number, targetRatio: number) => {
     const imgRatio = imgWidth / imgHeight;
     let w = 1;

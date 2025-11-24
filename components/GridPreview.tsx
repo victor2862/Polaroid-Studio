@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Photo, Settings, PAPER_SIZES, ASPECT_RATIOS } from '../types';
 import { Trash2, Crop } from 'lucide-react';
@@ -157,8 +158,9 @@ const PhotoCell: React.FC<PhotoCellProps> = ({
     let bottomPadding = 0;
 
     if (settings.style === 'polaroid') {
-        innerPadding = widthMm * 0.06;
-        bottomPadding = Math.max(20, heightMm * 0.20);
+        innerPadding = widthMm * 0.05;
+        // Use configured caption space
+        bottomPadding = settings.captionSpaceMm || 25;
         
         imgX += innerPadding;
         imgY += innerPadding;
@@ -242,7 +244,7 @@ const PhotoCell: React.FC<PhotoCellProps> = ({
                         bottom: 0,
                         left: 0,
                         width: '100%',
-                        height: `${(heightMm - (imgY + finalImgH)) * scale}px`,
+                        height: `${bottomPadding * scale}px`,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -252,14 +254,14 @@ const PhotoCell: React.FC<PhotoCellProps> = ({
                    <textarea 
                      value={photo.caption}
                      onChange={(e) => onUpdateCaption(e.target.value)}
-                     className="w-full text-center bg-transparent border-none resize-none focus:ring-0 p-1 outline-none overflow-hidden"
+                     className="w-full text-center bg-transparent border-none resize-none focus:ring-0 p-0 outline-none overflow-hidden"
                      style={{
                         fontFamily: settings.fontFamily,
                         fontSize: '12px',
                         color: '#4b5563',
-                        height: '100%',
                         lineHeight: '1.2'
                      }}
+                     rows={1}
                      placeholder="Legenda"
                    />
                 </div>
