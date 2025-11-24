@@ -1,19 +1,37 @@
 
 import React, { useState, useEffect } from 'react';
-import { Settings, PAPER_SIZES, ASPECT_RATIOS, AspectRatio } from '../types';
-import { LayoutGrid, Printer, Type, Image as ImageIcon, Save, RotateCcw } from 'lucide-react';
+import { Settings, PAPER_SIZES, ASPECT_RATIOS, AspectRatio, Preset } from '../types';
+import { LayoutGrid, Printer, Type, Image as ImageIcon, Save, Trash2, FolderOpen } from 'lucide-react';
 
 interface SidebarProps {
   settings: Settings;
   updateSettings: (newSettings: Partial<Settings>) => void;
   onExport: () => void;
   isExporting: boolean;
+  presets: Preset[];
+  onSavePreset: (name: string) => void;
+  onLoadPreset: (id: string) => void;
+  onDeletePreset: (id: string) => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ settings, updateSettings, onExport, isExporting }) => {
+const Sidebar: React.FC<SidebarProps> = ({ 
+  settings, 
+  updateSettings, 
+  onExport, 
+  isExporting,
+  presets,
+  onSavePreset,
+  onLoadPreset,
+  onDeletePreset
+}) => {
   // Local state for inputs to allow empty values while typing
   const [rowsInput, setRowsInput] = useState(settings.rows.toString());
   const [colsInput, setColsInput] = useState(settings.cols.toString());
+  
+  // Preset States
+  const [isSavingPreset, setIsSavingPreset] = useState(false);
+  const [newPresetName, setNewPresetName] = useState('');
+  const [selectedPresetId, setSelectedPresetId] = useState('');
 
   // Sync local state when external settings change (e.g. on load)
   useEffect(() => {
@@ -47,6 +65,14 @@ const Sidebar: React.FC<SidebarProps> = ({ settings, updateSettings, onExport, i
     }
   }
 
+  const handleSavePresetClick = () => {
+    if (newPresetName.trim()) {
+      onSavePreset(newPresetName);
+      setNewPresetName('');
+      setIsSavingPreset(false);
+    }
+  }
+
   return (
     <div className="w-full md:w-80 bg-white border-r h-screen overflow-y-auto flex flex-col shadow-xl z-20 no-scrollbar">
       <div className="p-6 border-b bg-gray-50">
@@ -54,9 +80,79 @@ const Sidebar: React.FC<SidebarProps> = ({ settings, updateSettings, onExport, i
            <Printer className="text-indigo-600" />
            Polaroid Studio
         </h1>
-        <div className="flex items-center justify-between mt-2">
-            <p className="text-xs text-gray-500">Configurações salvas automaticamente.</p>
-        </div>
+      </div>
+
+      {/* PRESETS SECTION */}
+      <div className="p-4 bg-indigo-50 border-b border-indigo-100">
+         <div className="flex justify-between items-center mb-2">
+            <span className="text-xs font-bold text-indigo-800 uppercase flex items-center gap-1">
+               <FolderOpen size={14} /> Presets Salvos
+            </span>
+            {!isSavingPreset && (
+              <button 
+                onClick={() => setIsSavingPreset(true)}
+                className="text-xs flex items-center gap-1 text-indigo-600 hover:text-indigo-800 font-medium"
+              >
+                <Save size={14} /> Novo
+              </button>
+            )}
+         </div>
+
+         {isSavingPreset ? (
+           <div className="space-y-2 animate-fade-in">
+             <input 
+               type="text" 
+               placeholder="Nome do preset..." 
+               value={newPresetName}
+               onChange={(e) => setNewPresetName(e.target.value)}
+               className="w-full text-xs p-2 rounded border border-indigo-200 focus:outline-none focus:border-indigo-400"
+               autoFocus
+             />
+             <div className="flex gap-2">
+                <button 
+                  onClick={handleSavePresetClick}
+                  disabled={!newPresetName.trim()}
+                  className="flex-1 bg-indigo-600 text-white text-xs py-1.5 rounded hover:bg-indigo-700 disabled:opacity-50"
+                >
+                  Salvar
+                </button>
+                <button 
+                  onClick={() => setIsSavingPreset(false)}
+                  className="flex-1 bg-white text-gray-600 text-xs py-1.5 rounded border hover:bg-gray-50"
+                >
+                  Cancelar
+                </button>
+             </div>
+           </div>
+         ) : (
+           <div className="flex gap-2">
+             <select 
+               value={selectedPresetId}
+               onChange={(e) => {
+                 setSelectedPresetId(e.target.value);
+                 if (e.target.value) onLoadPreset(e.target.value);
+               }}
+               className="flex-1 text-xs p-2 rounded border border-gray-300 bg-white focus:outline-none"
+             >
+               <option value="">Carregar configuração...</option>
+               {presets.map(p => (
+                 <option key={p.id} value={p.id}>{p.name}</option>
+               ))}
+             </select>
+             {selectedPresetId && (
+               <button 
+                 onClick={() => {
+                   onDeletePreset(selectedPresetId);
+                   setSelectedPresetId('');
+                 }}
+                 className="p-2 text-red-500 hover:bg-red-50 bg-white border rounded"
+                 title="Excluir preset selecionado"
+               >
+                 <Trash2 size={14} />
+               </button>
+             )}
+           </div>
+         )}
       </div>
 
       <div className="flex-1 p-6 space-y-8">

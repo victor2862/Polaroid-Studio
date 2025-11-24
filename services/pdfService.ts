@@ -120,56 +120,70 @@ export const generatePDF = async (photos: Photo[], settings: Settings) => {
         finalImgW = areaW;
         finalImgH = areaW / ratioValue;
         // Center vertically inside the image area
-        // Note: For Polaroid, we usually want the image to align to the top of its area 
-        // if we want a classic look, but centering is safer for various ratios.
         imgY += (areaH - finalImgH) / 2;
     }
 
-    // Process Image Crop using HTML Canvas
-    // This logic matches the new "Crop Box" logic.
-    // photo.crop contains {x, y, width, height} normalized (0-1) relative to source image.
+    // --- IMAGE PROCESSING ---
     
-    const tempCanvas = document.createElement('canvas');
     const imgObj = new Image();
     imgObj.src = photo.url;
     
     await new Promise<void>((resolve) => {
         if(imgObj.complete) resolve();
         imgObj.onload = () => resolve();
-        imgObj.onerror = () => resolve(); // fail safe
+        imgObj.onerror = () => resolve(); 
     });
 
-    const cropCanvas = document.createElement('canvas');
-    // High res for print (approx 300 DPI equivalent calculation relative to size)
-    const printScale = 4; 
-    const finalPixelW = finalImgW * 3.78 * printScale; 
-    const finalPixelH = finalImgH * 3.78 * printScale;
-    
-    cropCanvas.width = finalPixelW;
-    cropCanvas.height = finalPixelH;
-    const ctx = cropCanvas.getContext('2d');
-    
-    if (ctx && imgObj.width > 0) {
-        // Source Image Dimensions
-        const sw = imgObj.width;
-        const sh = imgObj.height;
+    if (imgObj.width > 0) {
+        // Step A: Create "Filtered" Canvas
+        // Since rotation is removed, we only need to apply filters.
+        
+        const adj = photo.adjustments || { brightness: 100, contrast: 100, saturation: 100 };
+        const transformCanvas = document.createElement('canvas');
+        const tCtx = transformCanvas.getContext('2d');
+        
+        if (tCtx) {
+            transformCanvas.width = imgObj.width;
+            transformCanvas.height = imgObj.height;
 
-        // Calculate Source Rectangle based on Crop Data
-        // Crop data is normalized 0-1
-        const sx = photo.crop.x * sw;
-        const sy = photo.crop.y * sh;
-        const sWidth = photo.crop.width * sw;
-        const sHeight = photo.crop.height * sh;
-        
-        // Draw the cropped portion of source into the full size of target canvas
-        ctx.drawImage(
-            imgObj,
-            sx, sy, sWidth, sHeight,  // Source: The crop box
-            0, 0, finalPixelW, finalPixelH // Destination: The full print area
-        );
-        
-        const croppedDataUrl = cropCanvas.toDataURL('image/jpeg', 0.95);
-        doc.addImage(croppedDataUrl, 'JPEG', imgX, imgY, finalImgW, finalImgH);
+            // Apply Filters
+            // Note: ctx.filter is supported in modern browsers. 
+            tCtx.filter = `brightness(${adj.brightness}%) contrast(${adj.contrast}%) saturate(${adj.saturation}%)`;
+
+            tCtx.drawImage(imgObj, 0, 0);
+            
+            // Step B: Crop from the Filtered Canvas
+            // photo.crop {x, y, w, h} is relative to this canvas size
+            
+            const cropCanvas = document.createElement('canvas');
+            // High res for print
+            const printScale = 4; 
+            const finalPixelW = finalImgW * 3.78 * printScale; 
+            const finalPixelH = finalImgH * 3.78 * printScale;
+            
+            cropCanvas.width = finalPixelW;
+            cropCanvas.height = finalPixelH;
+            const cCtx = cropCanvas.getContext('2d');
+            
+            if (cCtx) {
+                const sw = transformCanvas.width;
+                const sh = transformCanvas.height;
+                
+                const sx = photo.crop.x * sw;
+                const sy = photo.crop.y * sh;
+                const sWidth = photo.crop.width * sw;
+                const sHeight = photo.crop.height * sh;
+
+                cCtx.drawImage(
+                    transformCanvas, 
+                    sx, sy, sWidth, sHeight,
+                    0, 0, finalPixelW, finalPixelH
+                );
+
+                const croppedDataUrl = cropCanvas.toDataURL('image/jpeg', 0.95);
+                doc.addImage(croppedDataUrl, 'JPEG', imgX, imgY, finalImgW, finalImgH);
+            }
+        }
     }
 
     // Add Caption
@@ -178,21 +192,15 @@ export const generatePDF = async (photos: Photo[], settings: Settings) => {
        
        if (settings.fontFamily.includes('Marker') || settings.fontFamily.includes('Shadows')) {
            doc.setFont("courier", "bolditalic"); 
-           // Note: jsPDF standard fonts are limited. Real custom fonts require adding font files.
-           // For this demo, we assume standard fallback unless complex font handling is added.
        } else {
            doc.setFont("helvetica");
        }
        
        doc.setTextColor(50, 50, 50);
        
-       // Calculate Text Center Logic
-       // The text area is the bottom strip defined by bottomPadding (captionSpaceMm)
-       // It starts at (y + cellHeight - bottomPadding) and has height bottomPadding.
-       
        const textAreaTop = y + cellHeight - bottomPadding;
        const textAreaHeight = bottomPadding;
-       const textCenterY = textAreaTop + (textAreaHeight / 2) + 1; // +1 for visual optical alignment
+       const textCenterY = textAreaTop + (textAreaHeight / 2) + 1; 
        
        doc.text(photo.caption, x + cellWidth / 2, textCenterY, { align: 'center', maxWidth: cellWidth - 10 });
     }

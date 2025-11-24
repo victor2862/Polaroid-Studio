@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Photo, Settings, PAPER_SIZES, ASPECT_RATIOS } from '../types';
-import { Trash2, Crop } from 'lucide-react';
+import { Trash2, Crop, Edit2 } from 'lucide-react';
 
 interface GridPreviewProps {
   photos: Photo[];
@@ -213,27 +213,45 @@ const PhotoCell: React.FC<PhotoCellProps> = ({
         boxShadow: '0 0 1px rgba(0,0,0,0.2)'
     };
     
-    // Calculate safely to avoid division by zero
-    const bgScaleX = photo.crop.width > 0 ? 1 / photo.crop.width : 1;
-    const bgScaleY = photo.crop.height > 0 ? 1 / photo.crop.height : 1;
-    
-    const bgPosX = photo.crop.width >= 1 ? 0 : (photo.crop.x / (1 - photo.crop.width)) * 100;
-    const bgPosY = photo.crop.height >= 1 ? 0 : (photo.crop.y / (1 - photo.crop.height)) * 100;
-
-    const cropStyle: React.CSSProperties = {
-        width: '100%',
-        height: '100%',
-        backgroundImage: `url(${photo.url})`,
-        backgroundSize: `${bgScaleX * 100}% ${bgScaleY * 100}%`,
-        backgroundPosition: `${bgPosX}% ${bgPosY}%`,
-        backgroundRepeat: 'no-repeat'
-    };
+    // ADJUSTMENTS
+    const adj = photo.adjustments || { brightness: 100, contrast: 100, saturation: 100 };
 
     return (
         <div style={cardStyle} className="group">
             {/* The Image Area */}
             <div style={imageBoxStyle}>
-                <div style={cropStyle} />
+                {/* 
+                   We need a container that is the "full image" canvas, 
+                   placed such that the crop window is visible.
+                   
+                   Math:
+                   Crop X (0-1) is the left offset relative to Image Width.
+                   We want the crop area to fill the Box.
+                   So Image Width = Box Width / Crop Width.
+                   Left = - (Crop X * Image Width).
+                */}
+                <div 
+                   style={{
+                       width: `${(1/photo.crop.width) * 100}%`,
+                       height: `${(1/photo.crop.height) * 100}%`,
+                       marginLeft: `-${(photo.crop.x / photo.crop.width) * 100}%`,
+                       marginTop: `-${(photo.crop.y / photo.crop.height) * 100}%`,
+                       position: 'relative',
+                       display: 'flex',
+                       alignItems: 'center',
+                       justifyContent: 'center'
+                   }}
+                >
+                    <img 
+                      src={photo.url} 
+                      style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'contain', 
+                          filter: `brightness(${adj.brightness}%) contrast(${adj.contrast}%) saturate(${adj.saturation}%)`
+                      }} 
+                    />
+                </div>
             </div>
 
             {/* Caption Area */}
@@ -268,13 +286,13 @@ const PhotoCell: React.FC<PhotoCellProps> = ({
             )}
 
             {/* Hover Actions */}
-            <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+            <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                <button 
                  onClick={(e) => { e.stopPropagation(); onCrop(); }}
                  className="p-1.5 bg-white text-gray-700 rounded-full shadow-md hover:text-indigo-600"
-                 title="Recortar"
+                 title="Editar / Recortar"
                >
-                 <Crop size={14} />
+                 <Edit2 size={14} />
                </button>
                <button 
                  onClick={(e) => { e.stopPropagation(); onRemove(); }}

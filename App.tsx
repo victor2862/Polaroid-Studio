@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Settings, Photo, ASPECT_RATIOS } from './types';
+import { Settings, Photo, ASPECT_RATIOS, Preset, PhotoAdjustments } from './types';
 import Sidebar from './components/Sidebar';
 import GridPreview from './components/GridPreview';
 import CropModal from './components/CropModal';
@@ -26,6 +26,12 @@ const INITIAL_SETTINGS: Settings = {
   fontFamily: 'Shadows Into Light',
   backgroundColor: '#ffffff',
   borderColor: '#eeeeee',
+};
+
+const DEFAULT_ADJUSTMENTS: PhotoAdjustments = {
+  brightness: 100,
+  contrast: 100,
+  saturation: 100,
 };
 
 // Helper to calculate a centered crop that fits the target aspect ratio (Object-fit: cover equivalent)
@@ -64,21 +70,30 @@ const calculateCrop = (imgWidth: number, imgHeight: number, targetRatio: number)
 const App: React.FC = () => {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [settings, setSettings] = useState<Settings>(INITIAL_SETTINGS);
+  const [presets, setPresets] = useState<Preset[]>([]);
   const [cropPhotoId, setCropPhotoId] = useState<string | null>(null);
   const [isExporting, setIsExporting] = useState(false);
   
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load settings from local storage on mount
+  // Load settings and presets from local storage on mount
   useEffect(() => {
     const savedSettings = localStorage.getItem('polaroidStudioSettings');
     if (savedSettings) {
       try {
         const parsed = JSON.parse(savedSettings);
-        // Merge with initial to ensure new fields (like separate paddings) exist if loading old config
         setSettings(prev => ({ ...prev, ...parsed }));
       } catch (e) {
         console.error("Failed to load settings", e);
+      }
+    }
+
+    const savedPresets = localStorage.getItem('polaroidStudioPresets');
+    if (savedPresets) {
+      try {
+        setPresets(JSON.parse(savedPresets));
+      } catch (e) {
+        console.error("Failed to load presets", e);
       }
     }
   }, []);
@@ -90,7 +105,7 @@ const App: React.FC = () => {
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      const files = Array.from(e.target.files);
+      const files = Array.from(e.target.files) as File[];
       const targetRatio = ASPECT_RATIOS[settings.aspectRatio];
 
       // Process files to get dimensions and calculate initial crop
@@ -110,6 +125,7 @@ const App: React.FC = () => {
                     file,
                     caption: '',
                     crop,
+                    adjustments: { ...DEFAULT_ADJUSTMENTS },
                     originalWidth: img.width,
                     originalHeight: img.height
                 });
@@ -122,6 +138,7 @@ const App: React.FC = () => {
                     file,
                     caption: '',
                     crop: { x: 0, y: 0, width: 1, height: 1 },
+                    adjustments: { ...DEFAULT_ADJUSTMENTS },
                     originalWidth: 100,
                     originalHeight: 100
                 });
@@ -158,13 +175,38 @@ const App: React.FC = () => {
     setPhotos(prev => prev.filter(p => p.id !== id));
   };
 
-  const updatePhotoCrop = (id: string, crop: { x: number; y: number; width: number; height: number }) => {
-    setPhotos(prev => prev.map(p => p.id === id ? { ...p, crop } : p));
+  const handleSavePhoto = (id: string, crop: { x: number; y: number; width: number; height: number }, adjustments: PhotoAdjustments) => {
+    setPhotos(prev => prev.map(p => p.id === id ? { ...p, crop, adjustments } : p));
     setCropPhotoId(null);
   };
 
   const updateCaption = (id: string, text: string) => {
     setPhotos(prev => prev.map(p => p.id === id ? { ...p, caption: text } : p));
+  };
+
+  // Preset Handlers
+  const savePreset = (name: string) => {
+    const newPreset: Preset = {
+      id: simpleId(),
+      name,
+      settings: { ...settings }
+    };
+    const updatedPresets = [...presets, newPreset];
+    setPresets(updatedPresets);
+    localStorage.setItem('polaroidStudioPresets', JSON.stringify(updatedPresets));
+  };
+
+  const loadPreset = (presetId: string) => {
+    const preset = presets.find(p => p.id === presetId);
+    if (preset) {
+      updateSettings(preset.settings);
+    }
+  };
+
+  const deletePreset = (presetId: string) => {
+    const updatedPresets = presets.filter(p => p.id !== presetId);
+    setPresets(updatedPresets);
+    localStorage.setItem('polaroidStudioPresets', JSON.stringify(updatedPresets));
   };
 
   const handleExport = async () => {
@@ -192,6 +234,10 @@ const App: React.FC = () => {
         updateSettings={updateSettings} 
         onExport={handleExport}
         isExporting={isExporting}
+        presets={presets}
+        onSavePreset={savePreset}
+        onLoadPreset={loadPreset}
+        onDeletePreset={deletePreset}
       />
 
       {/* Main Content */}
@@ -255,7 +301,7 @@ const App: React.FC = () => {
         <CropModal 
           photo={photoToCrop} 
           aspectRatio={settings.aspectRatio} 
-          onSave={updatePhotoCrop} 
+          onSave={handleSavePhoto} 
           onClose={() => setCropPhotoId(null)} 
         />
       )}

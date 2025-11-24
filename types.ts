@@ -7,6 +7,12 @@ export interface PaperSize {
 
 export type AspectRatio = '1:1' | '4:3' | '3:4' | '16:9';
 
+export interface PhotoAdjustments {
+  brightness: number; // 0-200, default 100
+  contrast: number;   // 0-200, default 100
+  saturation: number; // 0-200, default 100
+}
+
 export interface Photo {
   id: string;
   url: string;
@@ -19,6 +25,7 @@ export interface Photo {
     width: number;
     height: number;
   };
+  adjustments: PhotoAdjustments;
   originalWidth?: number;
   originalHeight?: number;
 }
@@ -40,6 +47,12 @@ export interface Settings {
   fontFamily: 'Inter' | 'Shadows Into Light' | 'Permanent Marker';
   backgroundColor: string;
   borderColor: string;
+}
+
+export interface Preset {
+  id: string;
+  name: string;
+  settings: Settings;
 }
 
 export const PAPER_SIZES: Record<string, PaperSize> = {
