@@ -4,7 +4,7 @@ import { Settings, Photo, ASPECT_RATIOS, Preset, PhotoAdjustments } from './type
 import Sidebar from './components/Sidebar';
 import GridPreview from './components/GridPreview';
 import CropModal from './components/CropModal';
-import { generatePDF } from './services/pdfService';
+import { generatePDF, generatePNG } from './services/pdfService';
 import { Plus, ImagePlus } from 'lucide-react';
 
 const simpleId = () => Math.random().toString(36).substr(2, 9);
@@ -24,8 +24,9 @@ const INITIAL_SETTINGS: Settings = {
   aspectRatio: '1:1',
   showCaptions: true,
   fontFamily: 'Shadows Into Light',
-  backgroundColor: '#ffffff',
+  backgroundColor: '#ffffff00',
   borderColor: '#eeeeee',
+  captionFontSize: 12,
 };
 
 const DEFAULT_ADJUSTMENTS: PhotoAdjustments = {
@@ -223,6 +224,20 @@ const App: React.FC = () => {
     }, 100);
   };
 
+  const handleExportPNG = async () => {
+    setIsExporting(true);
+    setTimeout(async () => {
+        try {
+            await generatePNG(photos, settings);
+        } catch (error) {
+            console.error("Export PNG failed", error);
+            alert("Falha ao exportar PNG. Tente novamente.");
+        } finally {
+            setIsExporting(false);
+        }
+    }, 100);
+  };
+
   const photoToCrop = photos.find(p => p.id === cropPhotoId);
 
   return (
@@ -233,6 +248,7 @@ const App: React.FC = () => {
         settings={settings} 
         updateSettings={updateSettings} 
         onExport={handleExport}
+        onExportPNG={handleExportPNG}
         isExporting={isExporting}
         presets={presets}
         onSavePreset={savePreset}

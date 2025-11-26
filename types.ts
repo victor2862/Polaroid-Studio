@@ -47,6 +47,7 @@ export interface Settings {
   fontFamily: 'Inter' | 'Shadows Into Light' | 'Permanent Marker';
   backgroundColor: string;
   borderColor: string;
+  captionFontSize?: number;
 }
 
 export interface Preset {

@@ -1,12 +1,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { Settings, PAPER_SIZES, ASPECT_RATIOS, AspectRatio, Preset } from '../types';
-import { LayoutGrid, Printer, Type, Image as ImageIcon, Save, Trash2, FolderOpen } from 'lucide-react';
+import { LayoutGrid, Printer, Type, Image as ImageIcon, Save, Trash2, FolderOpen, ImageDown } from 'lucide-react';
 
 interface SidebarProps {
   settings: Settings;
   updateSettings: (newSettings: Partial<Settings>) => void;
   onExport: () => void;
+  onExportPNG: () => void;
   isExporting: boolean;
   presets: Preset[];
   onSavePreset: (name: string) => void;
@@ -17,7 +18,8 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ 
   settings, 
   updateSettings, 
-  onExport, 
+  onExport,
+  onExportPNG,
   isExporting,
   presets,
   onSavePreset,
@@ -288,6 +290,18 @@ const Sidebar: React.FC<SidebarProps> = ({
           </div>
           
           <div className="space-y-4">
+             <div className="pb-3 border-b border-gray-100">
+                 <label className="flex items-center gap-2 cursor-pointer">
+                     <input 
+                       type="checkbox"
+                       checked={settings.backgroundColor === '#ffffff00'}
+                       onChange={(e) => updateSettings({ backgroundColor: e.target.checked ? '#ffffff00' : '#ffffff' })}
+                       className="w-4 h-4 text-indigo-600 rounded focus:ring-indigo-500"
+                     />
+                     <span className="text-sm font-medium text-gray-700">Fundo Transparente</span>
+                 </label>
+             </div>
+
              <div>
                <label className="text-xs font-medium text-gray-500 uppercase">Formato</label>
                <select 
@@ -368,38 +382,63 @@ const Sidebar: React.FC<SidebarProps> = ({
                </label>
 
                {settings.showCaptions && (
-                 <div>
-                    <label className="text-xs font-medium text-gray-500 uppercase">Fonte</label>
-                    <select 
-                      value={settings.fontFamily}
-                      onChange={(e) => updateSettings({ fontFamily: e.target.value as any })}
-                      className="w-full mt-1 p-2 border rounded-lg bg-gray-50 text-sm"
-                    >
-                      <option value="Inter">Moderna (Sans-serif)</option>
-                      <option value="Shadows Into Light">Manuscrita (Caneta)</option>
-                      <option value="Permanent Marker">Marcador (Grosso)</option>
-                    </select>
-                 </div>
+                 <>
+                   <div>
+                      <label className="text-xs font-medium text-gray-500 uppercase">Fonte</label>
+                      <select 
+                        value={settings.fontFamily}
+                        onChange={(e) => updateSettings({ fontFamily: e.target.value as any })}
+                        className="w-full mt-1 p-2 border rounded-lg bg-gray-50 text-sm"
+                      >
+                        <option value="Inter">Moderna (Sans-serif)</option>
+                        <option value="Shadows Into Light">Manuscrita (Caneta)</option>
+                        <option value="Permanent Marker">Marcador (Grosso)</option>
+                      </select>
+                   </div>
+                   <div>
+                       <div className="flex justify-between items-center">
+                            <label className="text-xs font-medium text-gray-500 uppercase">Tamanho da Fonte</label>
+                            <span className="text-xs text-gray-500">{settings.captionFontSize || 12}px</span>
+                       </div>
+                       <input 
+                         type="range" 
+                         min="8" 
+                         max="24" 
+                         value={settings.captionFontSize || 12}
+                         onChange={(e) => updateSettings({ captionFontSize: parseInt(e.target.value) })}
+                         className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600 mt-1"
+                       />
+                   </div>
+                 </>
                )}
              </div>
           </section>
         )}
       </div>
 
-      <div className="p-6 border-t bg-gray-50">
+      <div className="p-6 border-t bg-gray-50 space-y-3">
         <button 
           onClick={onExport}
           disabled={isExporting}
           className="w-full py-3 bg-indigo-600 text-white font-bold rounded-xl shadow-lg hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
         >
           {isExporting ? (
-             <span className="animate-pulse">Gerando PDF...</span>
+             <span className="animate-pulse">Gerando...</span>
           ) : (
              <>
                <Printer size={20} />
-               Exportar para PDF
+               Exportar PDF
              </>
           )}
+        </button>
+
+        <button 
+          onClick={onExportPNG}
+          disabled={isExporting}
+          className="w-full py-3 bg-white text-gray-700 font-bold rounded-xl border border-gray-200 shadow hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed"
+        >
+          <ImageDown size={20} />
+          Exportar PNG
         </button>
       </div>
     </div>
